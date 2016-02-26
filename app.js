@@ -1,33 +1,70 @@
 /***/
 
 function moveIntersect(x1, y1, x2, y2) {
-        if (x2 > x1 + 1 || x2 < x1 - 1) {
-            return false;
-        }
-        else if (y2 > y2 + 1 || y2 < y2 - 1) {
-            return false;
-        }
-        else {
-            return true;
-        }
+    if (x2 > x1 + 1 || x2 < x1 - 1) {
+        return false;
+    }
+    else if (y2 > y1 + 1 || y2 < y1 - 1) {
+        return false;
+    }
+    else {
+        return true;
+    }
 }
 
 function kickIntersect(x1, y1, x2, y2) {
-        if (x1 == x2 || y1 == y2) {
-            return false;
-        }
-    
-        if (x2 > x1 + 2 || x2 < x1 - 2) {
-            return false;
-        }
-        else if (y2 > y2 + 2 || y2 < y2 - 2) {
-            return false;
-        }
-        else {
-            return true;
-        }
+
+    if (x2 == x1 + 1 || x2 == x1 - 1 || y2 ==  y1 + 1 || y2 == y1 - 1) {
+        return false;
+    }
+
+    if (x1 == x2 || y1 == y2) {
+        return false;
+    }
+
+    if (x2 > x1 + 2 || x2 < x1 - 2) {
+        return false;
+    }
+    else if (y2 > y2 + 2 || y2 < y2 - 2) {
+        return false;
+    }
+    else {
+        return true;
+    }
 }
 
+var cacheHint = [];
+function hintGo(td) {
+    var currentElY = Number(td.dataset.y);
+    var currentElX = Number(td.dataset.x);
+    var possibleRows1 = document.getElementById('y' + (currentElY + 1)).childNodes;
+    var possibleRows2 = document.getElementById('y' + (currentElY - 1)).childNodes;
+    var possibleRows = $.merge(possibleRows1, possibleRows2);
+    var len = possibleRows1.length + possibleRows2.length;
+    for (var i = 0; i < len; i++) {
+        if (possibleRows[i].childNodes.length != 0) {
+            continue;
+        }
+        if ((Number(possibleRows[i].dataset.y) == currentElY + 1 ||
+            Number(possibleRows[i].dataset.y) == currentElY - 1) &&
+            (Number(possibleRows[i].dataset.x) == currentElX + 1 ||
+            Number(possibleRows[i].dataset.x) == currentElX - 1)) {
+            $(possibleRows[i]).addClass('hint-mark');
+            cacheHint.push(possibleRows[i]);
+        }
+    }
+}
+
+function offHint() {
+    if (cacheHint.length == 0) {
+        $('td').removeClass('hint-mark');
+        return;
+    }
+    cacheHint.forEach(function (el, ind, arr) {
+        $(el).removeClass('hint-mark');
+    });
+    cacheHint = [];
+}
 
 /**
  * Created by alexandr.beloborodov on 2/20/2016.
@@ -45,77 +82,94 @@ player.prototype.addItem = function (item) {
 
 
 var player1 = new player();
-player1.item = "<span class='player1 drag' draggable='true' style='display: block;background: #fff;border-radius: 5px'>o</span>";
+player1.item = "<span class='player1 drag' draggable='true' style='display: block;background: #fff;border-radius: 18px'>o</span>";
 var player2 = new player();
-player2.item = "<span class='player2 drag' draggable='true' style='display: block;background: #2d2d2d;border-radius: 5px'>o</span>";
+player2.item = "<span class='player2 drag' draggable='true' style='display: block;background: #2d2d2d;border-radius: 18px'>o</span>";
 
-function createField() {
-    var field = [];
-    for (var i = 0; i < 8;i++) {
-        field[i] = [];
+
+var Game = function (options) {
+    options = options || {};
+    this.countCells = undefined == options.countCells ? 64 : options.countCells;
+    this.countCheckers = this.countCells == 64 ? 12 : 20;
+    this.field = null;
+};
+
+Game.prototype.createField = function () {
+
+    if (this.field) {
+        return;
+    }
+
+    this.field = [];
+
+    for (var i = 0, lenI = Math.sqrt(this.countCells); i < lenI; i++) {
+        this.field[i] = [];
         for (var j = 0; j < 8; j++) {
             if (i % 2 == 0) {
                 if (j % 2 == 0) {
-                    field[i].push({point:'w'});
+                    this.field[i].push({point:'w'});
                 }
                 else {
-                    field[i].push({point:'b'});
+                    this.field[i].push({point:'b'});
                 }
             }
             else  {
                 if (j % 2 == 1) {
-                    field[i].push({point:'w'});
+                    this.field[i].push({point:'w'});
                 }
                 else {
-                    field[i].push({point:'b'});
+                    this.field[i].push({point:'b'});
                 }
             }
+            
+            this.field[i][j].x = j;
+            this.field[i][j].y = lenI - i - 1;
 
-            if (field[i][j].point == 'b' && i < 3) {
-                field[i][j].item = player1.item;
+            if (this.field[i][j].point == 'b' && i < 3) {
+                this.field[i][j].item = player1.item;
             }
 
-            if (field[i][j].point == 'b' && i > 4) {
-                field[i][j].item = player2.item;
+            if (this.field[i][j].point == 'b' && i > 4) {
+                this.field[i][j].item = player2.item;
             }
         }
     }
-    return field;
-}
+};
 
-function createPlayer1() {
+Game.prototype.renderField = function () {
+    if (!this.field || this.field.length == 0) {
+        throw Error("Field not init");
+    }
 
-}
-
-var f = createField();
-
-var exit = 0;
-
-var html = '<table>';
-
-var body = document.getElementsByTagName('body')[0];
-
-for (var i = 0; i < f.length; i++) {
-    html += "<tr>";
-    for (var j = 0; j < f[i].length; j++) {
-        if (f[i][j].point == 'w') {
-            html += '<td data-x="'+j+'" data-y="'+(f.length - 1 - i)+'" class="w" style="background: rgb(255, 255, 255)">&nbsp;&nbsp;&nbsp;</td>';
-        }
-        else {
-            if (f[i][j].item != undefined) {
-                html += '<td data-x="'+j+'" data-y="'+(f.length - 1 - i)+'" class="b" style="background: #000">&nbsp;' + f[i][j].item + '&nbsp;</td>';
+    var html = '<table>';
+    var body = document.getElementsByTagName('body')[0];
+    for (var i = 0, len = this.field.length; i < len; i++) {
+        html += "<tr id='y" + (len - i - 1) + "'>";
+        for (var j = 0; j < this.field[i].length; j++) {
+            if (this.field[i][j].point == 'w') {
+                html += '<td data-x="' + this.field[i][j].x +
+                    '" data-y="'+ this.field[i][j].y +'" class="w" style="background: rgb(255, 255, 255)"></td>';
             }
             else {
-                html += '<td data-x="'+j+'" data-y="'+(f.length - 1 - i)+'" class="b" style="background: #000">&nbsp;&nbsp;&nbsp;</td>';
+                if (this.field[i][j].item != undefined) {
+                    html += '<td data-x="' + this.field[i][j].x + '" data-y="' + this.field[i][j].y +
+                        '" class="b" style="background: #000">' + this.field[i][j].item + '</td>';
+                }
+                else {
+                    html += '<td data-x="' + this.field[i][j].x + '" data-y="' + this.field[i][j].y +
+                        '" class="b" style="background: #000"></td>';
+                }
             }
         }
+        html += "</tr>";
     }
-    html += "</tr>";
-}
-html += '</table>';
-body.innerHTML = html;
+    html += '</table>';
+    body.innerHTML = html;
+};
 
-
+var game = new Game();
+game.createField();
+game.renderField();
 
 
 var dStartColor = '#000';
@@ -138,6 +192,8 @@ function handleDragStart(e) {
 
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', this.innerHTML);
+
+    hintGo(this.parentElement)
 }
 
 
@@ -204,7 +260,6 @@ function handleDragEnd(e) {
         e.preventDefault();
     }
     e.dataTransfer.dropEffect = 'move';
-
     return false;
  }
  
@@ -212,6 +267,7 @@ function handleDragEnd(e) {
      if (e.stopPropagation) {
         e.stopPropagation();
     }
+     offHint();
     
     var x2 = this.dataset.x, y2 = this.dataset.y;
     var x1 = dragSrcEl.parentNode.dataset.x, y1 = dragSrcEl.parentNode.dataset.y;
@@ -226,9 +282,9 @@ function handleDragEnd(e) {
         this.appendChild(dragSrcEl);
         kickedEl.remove();
     }
-    
+
     mark = false;
-    kickedEl = null;
+    kickedEl = null
     return false;
  }
 
@@ -246,3 +302,4 @@ function handleDragEnd(e) {
     el.addEventListener('dragover', handleTdDragOver, false);
     el.addEventListener('drop', handleTdDrop, false);
 });
+
